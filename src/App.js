@@ -1,12 +1,20 @@
+import MainPage from "./MainPage";
 import "./App.css";
+import Nav from "./Nav.js";
+import { useState } from "react";
 
 function App() {
-  return (
-    <>
-      <div>안녕하세요! 김우진 입니다!</div>
-      <div></div>
-    </>
-  );
+    const [mode, setMode] = useState("Main"); // 페이지 선택
+    let content = null;
+    if(mode === "Main") {
+        content = <MainPage/>
+    }
+    return (
+        <div className="screen">
+            <Nav />
+            {content}
+        </div>
+    )
 }
 
 export default App;
