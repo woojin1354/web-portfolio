@@ -15,7 +15,6 @@ function ProjectTop() {
         <div className="div">
           <div className="text-wrapper">프로젝트</div>
         </div>
-
         <div className="div">
           <p className="p">
             <span className="span">지금까지 진행한 </span>
@@ -23,7 +22,6 @@ function ProjectTop() {
             <span className="span">을 소개합니다.</span>
           </p>
         </div>
-
         <div className="stats-info">
           <div className="stat-item">
             <div className="stat-number">12+</div>
