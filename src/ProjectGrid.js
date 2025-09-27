@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./ProjectGrid.css";
-import DefaultImage from "../assets/images/ProfileImage.png";
+import DefaultImage from "./assets/images/ProfileImage.png";
 
 function ProjectGrid() {
   const [projects, setProjects] = useState([]);
