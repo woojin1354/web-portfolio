@@ -28,7 +28,6 @@
 }
 .popup-body { padding: 16px 18px; }
 .popup-footer { padding: 12px 18px 16px; border-top: 1px solid #eee; }
-.popup-link { color: #2563eb; text-decoration: underline; }
 
 .popup-plain {
   white-space: pre-wrap;
@@ -53,3 +52,26 @@
 }
 .notion-table th { background: #f7f7f7; font-weight: 600; }
 .notion-table td, .notion-table th { text-align: left; }
+
+.popup-link {
+  display: inline-block;
+  background: #111827;
+  color: #fff;
+  padding: 9px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.popup-attachment {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.popup-attachment-icon {
+  margin-right: 6px;     /* 아이콘과 텍스트 간격 */
+  font-size: 1.1em;      /* 아이콘 조금 크게 */
+}
+
+.popup-attachment-label {
+  font-weight: 500;      /* 텍스트 살짝 두껍게 */
+  color: #2563eb;        /* 파란색 링크 느낌 */
+}
