@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./ProjectGrid.css";
+import DefaultImage from "../assets/images/ProfileImage.png";
 
 function ProjectGrid() {
   const [projects, setProjects] = useState([]);
@@ -17,20 +18,16 @@ function ProjectGrid() {
 
   useEffect(() => {
     (async () => {
-      try {
-        // GitHub Pages 루트에 배포되므로 '/projects.json'
-        const res = await fetch("/projects.json", { cache: "no-store" });
-        if (!res.ok) throw new Error("failed");
-        const data = await res.json();
-        setProjects(data.projects || []);
-      } catch (e) {
-        setError("프로젝트 데이터를 불러오지 못했습니다.");
-      } finally {
-        setLoading(false);
-      }
+      const res = await fetch(process.env.PUBLIC_URL + "/projects.json");
+      const data = await res.json();
+      setProjects(
+        (data.projects || []).map(p => ({
+          ...p,
+          image: p.image || DefaultImage,
+        }))
+      );
     })();
   }, []);
-
   if (loading) return <div className="projects-grid-wrapper">로딩중…</div>;
   if (error)   return <div className="projects-grid-wrapper">{error}</div>;
 

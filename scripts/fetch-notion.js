@@ -1,7 +1,5 @@
-import { Client } from '@notionhq/client';
 import fs from 'fs';
 import path from 'path';
-
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const DB_ID = process.env.NOTION_DATABASE_ID;
@@ -11,37 +9,59 @@ if (!NOTION_TOKEN || !DB_ID) {
   process.exit(1);
 }
 
-const notion = new Client({ auth: NOTION_TOKEN });
+const NOTION_API = 'https://api.notion.com/v1/databases/' + DB_ID + '/query';
+const HEADERS = {
+  'Authorization': `Bearer ${NOTION_TOKEN}`,
+  'Notion-Version': '2022-06-28',
+  'Content-Type': 'application/json',
+};
+
 const plain = (rich) => (rich?.map?.(r => r?.plain_text).join('') ?? '');
 
-async function fetchAll(database_id) {
-  const out = [];
-  let cursor;
-  do {
-    const resp = await notion.databases.query({
-      database_id,
-      start_cursor: cursor,
-      sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }],
+async function fetchAllPages() {
+  const pages = [];
+  let body = {
+    sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }],
+    page_size: 100
+  };
+  while (true) {
+    const resp = await fetch(NOTION_API, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify(body),
     });
-    out.push(...resp.results);
-    cursor = resp.has_more ? resp.next_cursor : undefined;
-  } while (cursor);
-  return out;
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.error('Notion API error:', resp.status, t);
+      process.exit(1);
+    }
+    const data = await resp.json();
+    pages.push(...(data.results || []));
+    if (data.has_more && data.next_cursor) {
+      body.start_cursor = data.next_cursor;
+    } else {
+      break;
+    }
+  }
+  return pages;
 }
 
 function mapPage(page) {
-  const p = page.properties ?? {};
-  const title =
-    p.Name?.title?.[0]?.plain_text ??
-    p.Title?.title?.[0]?.plain_text ?? '(제목 없음)';
+  const props = page.properties || {};
 
-  const date = p.Date?.date?.start ?? null;
+  const title =
+    props.Name?.title?.[0]?.plain_text ??
+    props.Title?.title?.[0]?.plain_text ??
+    '(제목 없음)';
+
+  const date = props.Date?.date?.start ?? null;
 
   const tags =
-    p['Multi-select']?.multi_select?.map(t => t.name) ??
-    p.Tags?.multi_select?.map(t => t.name) ?? [];
+    props['Multi-select']?.multi_select?.map(t => t.name) ??
+    props.Tags?.multi_select?.map(t => t.name) ?? [];
 
-  const status = p.Status?.select?.name ?? '알수없음';
+  const status = props.Status?.select?.name ?? '알수없음';
+
 
   let image = null;
   if (page.cover) {
@@ -49,8 +69,7 @@ function mapPage(page) {
       ? page.cover.external?.url
       : page.cover.file?.url;
   }
-  if (!image) image = null;
-  
+
   return {
     id: page.id,
     title,
@@ -64,7 +83,7 @@ function mapPage(page) {
 }
 
 async function main() {
-  const pages = await fetchAll(DB_ID);
+  const pages = await fetchAllPages();
   const projects = pages.map(mapPage);
   const out = { projects, generatedAt: new Date().toISOString() };
 
