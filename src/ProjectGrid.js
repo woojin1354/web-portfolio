@@ -7,6 +7,7 @@ function ProjectGrid() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selected, setSelected]= useState(null);
 
   const getStatusColor = (status) => {
     switch (status) {
