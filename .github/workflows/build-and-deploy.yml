@@ -1,4 +1,4 @@
-name: Build Notion projects.json
+name: Build Notion projects.json and Deploy CRA
 
 on:
   workflow_dispatch:
@@ -8,10 +8,10 @@ on:
     - cron: '0 */6 * * *'  # 6시간마다 자동 갱신
 
 jobs:
-  build:
+  build_deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 커밋/푸시 권한
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
           node-version: '20'
 
       - name: Install deps
-        run: npm i
+        run: npm ci
 
       - name: Generate projects.json from Notion
         env:
@@ -30,7 +30,7 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: node scripts/fetch-notion.js
 
-      - name: Commit changes (if any)
+      - name: Commit updated projects.json (if changed)
         run: |
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
@@ -39,3 +39,12 @@ jobs:
             git commit -m "chore: update projects.json from Notion [skip ci]"
             git push
           fi
+
+      - name: Build CRA
+        run: npm run build
+
+      - name: Deploy to gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: build
