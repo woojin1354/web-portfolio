@@ -1,5 +1,5 @@
-import "./ProjectTop.css"
-
+import "./ProjectTop.css";
+import Profileimage from "./assets/images/ProfileImage.png";
 function ProjectTop() {
   return (
     <div className="projects-section">
@@ -7,7 +7,7 @@ function ProjectTop() {
         <img
           className="image"
           alt="Profile"
-          src="https://c.animaapp.com/3l4pNNTR/img/image-1@2x.png"
+          src={Profileimage}
         />
       </div>
 
