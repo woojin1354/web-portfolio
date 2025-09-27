@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./ProjectGrid.css";
 import DefaultImage from "./assets/images/ProfileImage.png";
+import Popup from "./components/Popup.js";
 
 function ProjectGrid() {
   const [projects, setProjects] = useState([]);
@@ -53,7 +54,12 @@ function ProjectGrid() {
 
       <div className="projects-grid">
         {projects.map((project) => (
-          <div key={project.id} className="project-card">
+          <div
+            key={project.id}
+            className="project-card"
+            onClick={() => setSelected(project)}
+            style={{ cursor: "pointer" }}
+          >
             <div className="project-image">
               <img src={project.image} alt={project.title} />
               <div
@@ -63,7 +69,6 @@ function ProjectGrid() {
                 {project.status}
               </div>
             </div>
-
             <div className="project-content">
               <div className="project-title">{project.title}</div>
               {project.date && (
@@ -81,6 +86,8 @@ function ProjectGrid() {
         ))}
         {projects.length === 0 && <div>표시할 프로젝트가 없습니다.</div>}
       </div>
+
+      <Popup project={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
