@@ -1,5 +1,5 @@
-import ProjectGrid from "./ProjectGrid";
-import ProjectTop from "./ProjectTop";
+import ProjectGrid from "./ProjectGrid.js";
+import ProjectTop from "./ProjectTop.js";
 
 function ProjectPage() {
     return (

@@ -1,6 +1,6 @@
 import "./App.css";
 import Nav from "./Nav.js";
-import MainPage from "./MainPage";
+import MainPage from "./MainPage.js";
 import { Route, Routes } from "react-router-dom";
 import ProjectPage from "./ProjectPage.js";
 
