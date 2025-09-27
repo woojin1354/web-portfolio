@@ -1,0 +1,169 @@
+{
+  "projects": [
+    {
+      "id": "27a680ca-c563-80df-9224-ed73be02cdfb",
+      "title": "머신러닝 특강(오렌지3)",
+      "date": "2024-07-22",
+      "tags": [
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-8086-8535-d0c794ce1059",
+      "title": "디지털 공학 특강",
+      "date": "2024-07-22",
+      "tags": [
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-8021-88e2-fe8038ecb5d1",
+      "title": "정보 보안 특강",
+      "date": "2024-01-22",
+      "tags": [
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-80db-ba50-f0c7ce76223b",
+      "title": "파이썬 심화 특강(데이터 분석)",
+      "date": "2022-07-25",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-8034-a8af-f8c89b79bfab",
+      "title": "파이썬 기초 특강(문법)",
+      "date": "2022-07-25",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-8021-9adb-f31536fdaa5d",
+      "title": "파이썬 심화 특강(데이터 분석)",
+      "date": "2023-01-02",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-80f0-8793-c3d4044e773f",
+      "title": "파이썬 심화 특강(웹 스크래핑, 챗 봇)",
+      "date": "2023-07-24",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-8053-a790-d6a46ef76ff3",
+      "title": "파이썬 기초 특강(문법)",
+      "date": "2023-01-02",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-803c-aeba-fd28f2751b32",
+      "title": "파이썬 기초 특강(알고리즘)",
+      "date": "2023-07-24",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-8039-bc89-d4dd1f3cdb2e",
+      "title": "인공지능 특강(",
+      "date": "2025-01-13",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27a680ca-c563-8072-ba34-e774455ef288",
+      "title": "OOP 특강(객체 지향 프로그래밍)",
+      "date": "2025-02-17",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27b680ca-c563-8015-a9f2-eddc825a9b1f",
+      "title": "정보 보안 특강(암호학)",
+      "date": "2025-07-28",
+      "tags": [
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    },
+    {
+      "id": "27b680ca-c563-803a-89a6-fd63c3926fc6",
+      "title": "알고-파티 2회(행사)",
+      "date": "2025-08-10",
+      "tags": [
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T17:45:00.000Z"
+    }
+  ],
+  "generatedAt": "2025-09-27T18:56:40.345Z"
+}
