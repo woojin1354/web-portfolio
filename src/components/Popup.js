@@ -21,14 +21,35 @@ function Popup({ project, onClose }) {
         </div>
 
         <div className="popup-body">
-          {/* content: string[] → 줄단위 렌더 */}
           {Array.isArray(project.content) && project.content.length > 0 ? (
             <div className="popup-plain">
-              {project.content.map((line, idx) => (
-                <div key={idx} className="popup-line">
-                  {line}
-                </div>
-              ))}
+              {project.content.map((line, idx) => {
+                const m = /^URL:\s+(https?:\/\/\S+)/.exec(line);
+                if (m) {
+                  return (
+                    <div key={idx} className="popup-line">
+                      URL:{" "}
+                      <a href={m[1]} target="_blank" rel="noreferrer">
+                        {m[1]}
+                      </a>
+                    </div>
+                  );
+                }
+                if (typeof line === "string" && line.startsWith('<div class="notion-table-wrap">')) {
+                  return (
+                    <div
+                      key={idx}
+                      className="popup-line popup-table"
+                      dangerouslySetInnerHTML={{ __html: line }}
+                    />
+                  );
+                }
+                return (
+                  <div key={idx} className="popup-line">
+                    {line}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="popup-desc">본문이 없습니다.</p>
