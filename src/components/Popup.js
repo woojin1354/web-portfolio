@@ -20,42 +20,28 @@ function Popup({ project, onClose }) {
           <button className="popup-close" onClick={onClose} aria-label="닫기">×</button>
         </div>
 
-        {project.image && (
-          <img className="popup-image" src={project.image} alt={project.title} />
-        )}
-
         <div className="popup-body">
-          <p className="popup-desc">
-            {project.description || "설명이 없습니다."}
-          </p>
-
-          <div className="popup-meta">
-            {project.date && (
-              <span className="popup-chip">
-                {new Date(project.date).toLocaleDateString()}
-              </span>
-            )}
-            {project.status && (
-              <span className="popup-chip">{project.status}</span>
-            )}
-          </div>
-
-          {Array.isArray(project.tags) && project.tags.length > 0 && (
-            <div className="popup-tags">
-              {project.tags.map((t, i) => (
-                <span key={i} className="popup-tag">{t}</span>
+          {/* content: string[] → 줄단위 렌더 */}
+          {Array.isArray(project.content) && project.content.length > 0 ? (
+            <div className="popup-plain">
+              {project.content.map((line, idx) => (
+                <div key={idx} className="popup-line">
+                  {line}
+                </div>
               ))}
             </div>
+          ) : (
+            <p className="popup-desc">본문이 없습니다.</p>
           )}
         </div>
 
-        {project.url && (
-          <div className="popup-actions">
+        <div className="popup-footer">
+          {project.url && (
             <a className="popup-link" href={project.url} target="_blank" rel="noreferrer">
               Notion에서 열기
             </a>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
