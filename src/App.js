@@ -1,19 +1,23 @@
-import MainPage from "./MainPage";
 import "./App.css";
 import Nav from "./Nav.js";
-import { useState } from "react";
+import MainPage from "./MainPage";
+import { Route, Routes } from "react-router-dom";
+import ProjectPage from "./ProjectPage.js";
+
+const navItems = [{title: 'Main', path:'/', page: <MainPage/>}, {title : 'Projects', path:'/projects', page: <ProjectPage/>}, {title : 'Contact', path:'/contact'}];
 
 function App() {
-    const [mode, setMode] = useState("Main"); // 페이지 선택
-    let content = null;
-    if(mode === "Main") {
-        content = <MainPage/>
-    }
     return (
-        <div className="screen">
-            <Nav />
-            {content}
-        </div>
+            <div className="screen">
+                <Nav navItems={navItems}/>
+                <Routes>
+                    {navItems.map((item) => (
+                        <Route path={item.path} element={item.page}/>
+                    ))}
+                </Routes>
+            </div>
+            
+        
     )
 }
 

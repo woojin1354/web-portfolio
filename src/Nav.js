@@ -1,15 +1,22 @@
 import "./Nav.css";
+import { NavLink } from "react-router-dom";
 
-function Nav() {
-    const navItems = ['Main', 'Projects', 'Contact'];
+function Nav(props) {
+    const navItems = props.navItems;
     return (
         <nav className="navigation">
             <div className="nav-container">
-            {navItems.map((item, index) => (
-                <div key={item} className={`nav-item ${index === 0 ? 'active' : ''}`}>
-                {item}
-                </div>
-            ))}
+                {navItems.map((item) => (
+                <NavLink
+                    key={item.title}
+                    to={item.path}
+                    className={({ isActive }) =>
+                    `nav-item ${isActive ? "active" : ""}`
+                    }
+                >
+                    {item.title}
+                </NavLink>
+                ))}
             </div>
         </nav>
     )

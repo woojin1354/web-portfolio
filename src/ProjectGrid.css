@@ -1,0 +1,128 @@
+.projects-grid-wrapper {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  left: 32px;
+  position: absolute;
+  top: 463px;
+  width: calc(100% - 64px);
+}
+
+.projects-grid-wrapper .heading {
+  align-items: center;
+  align-self: stretch;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+}
+
+.projects-grid-wrapper .text-wrapper-3 {
+  align-items: center;
+  align-self: stretch;
+  color: #1a1a1a;
+  display: flex;
+  font-family: "Inter", Helvetica;
+  font-size: 32px;
+  font-weight: 700;
+  justify-content: center;
+  letter-spacing: -0.32px;
+  line-height: 51.2px;
+  margin-top: -1.00px;
+  position: relative;
+  text-align: center;
+}
+
+.projects-grid-wrapper .projects-grid {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  max-width: 1200px;
+  width: 100%;
+}
+
+.projects-grid-wrapper .project-card {
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.projects-grid-wrapper .project-card:hover {
+  box-shadow: 0px 8px 32px #00000014;
+  transform: translateY(-4px);
+}
+
+.projects-grid-wrapper .project-image {
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.projects-grid-wrapper .project-image img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.projects-grid-wrapper .project-status {
+  border-radius: 12px;
+  color: #ffffff;
+  font-family: "Inter", Helvetica;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 19.2px;
+  padding: 4px 12px;
+  position: absolute;
+  right: 12px;
+  top: 12px;
+}
+
+.projects-grid-wrapper .project-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.projects-grid-wrapper .project-title {
+  color: #1a1a1a;
+  font-family: "Inter", Helvetica;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 32px;
+}
+
+.projects-grid-wrapper .project-description {
+  color: #666666;
+  font-family: "Inter", Helvetica;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 22.4px;
+}
+
+.projects-grid-wrapper .project-tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.projects-grid-wrapper .tech-tag {
+  background-color: #f5f5f5;
+  border-radius: 16px;
+  color: #1a1a1a;
+  font-family: "Inter", Helvetica;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 19.2px;
+  padding: 4px 12px;
+}
