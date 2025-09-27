@@ -1,6 +1,34 @@
 {
   "projects": [
     {
+      "id": "27a680ca-c563-8039-bc89-d4dd1f3cdb2e",
+      "title": "인공지능 특강(선형회귀 모델)",
+      "date": "2025-01-13",
+      "tags": [
+        "Python",
+        "IM4U"
+      ],
+      "status": "완료",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T20:44:00.000Z",
+      "url": "https://www.notion.so/27a680cac5638039bc89d4dd1f3cdb2e",
+      "content": [
+        "[table]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[file]"
+      ]
+    },
+    {
       "id": "27b680ca-c563-803a-89a6-fd63c3926fc6",
       "title": "알고-파티 2회(행사)",
       "date": "2025-08-10",
@@ -8,9 +36,14 @@
         "IM4U"
       ],
       "status": "완료",
-      "image": "https://prod-files-secure.s3.us-west-2.amazonaws.com/bdbca5cc-1a6a-4f92-b63b-35bf16d62037/2051f94f-4e3f-42ef-8297-9a157df1f036/%ED%99%94%EB%A9%B4_%EC%BA%A1%EC%B2%98_2025-09-28_042020.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466R3EK35RL%2F20250927%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250927T200350Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECQaCXVzLXdlc3QtMiJGMEQCID8ARXZdaZ951YXUB2erXpvAnf5Ivgj6T19EF7PV7Lj4AiAE6e6X5EPMH6W89biR%2BMFhXwtSiDEj6Ak%2BYGQeDjOtOyqIBAit%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAAaDDYzNzQyMzE4MzgwNSIMeXiF8yPSPMLC3DhbKtwDYRsVjedruTkvW4bxAGNmy0dLEFkzzT92pJSBesaAYl3ujXXNO6ElYBJjS2%2BJCSVjPlbK0tPGEiU93Bk%2BNXF0JNrtMOMCvzk3%2F0vLusnfpP93AKKUwrR5FRyIngh0TaTii7Gaet2XioEXh7pMO2%2FOaQoFTIYXdv3Q6jSHQybgGKWpFfPMog%2BnRO25AGDKRxjbhalZeA8UPGTJ00S2Jp1GSlhz2L%2Fzc3yaPv7riSvjmT4XysprrDhnXlL7I%2FIUStzaKRQtT2VZJDiTEwq9q9MK9kyVb85CMbXdoGxLczZxdJQQMePsf%2Fxx9v%2BU8t5djXfQ7Pf8dE2snd88mXJePBgGJ4SbsnydmYq0b%2BqNi7velEAplM6u5PLyqI5kRt2vzBe1hsWP8iWXRPVARoS2LjBp9M2FzmHBKNxHWIgUozxbWp6QxwHPaDn5APbH1yv1Vb3zFj6bJZHAz1gjX4sB7%2B%2B2AhFU%2B2GtdnNpYCSScQ52Gv2LFVcfs4OLbH%2FPpLxo0fPtVy1VugNWD1nfR89EbnCEI%2B%2F0I1acVrQeFHSLtZwIL6k9czVtSDV7rvfy4Muiinw%2FyiI1XUiW8bwdsJr807PmX6t%2FfXpOIjXt%2BoouZfeF8gt3bxBg7FLem2eTW4owm4HhxgY6pgHFG4ighygcy84DvRIVE%2BAIMBPcvFK7PgeEBUmPFCqp1nc0VqMXQAToeFQGk4X2If1lHMfM0c%2BIUiiFjeRqBH0f1hCtzjwXWoKOmZQGtsel6UAkHDuuSldERXhKtxP%2F1mZAuNOf7szWBe8tv7ZNROD1q2ugqwCIfqXl8am83IVqbWNrWjOb%2BqshzYJ9ReMhpLwN0X%2FMSZaAjDeYZ7IpLqH9ZhZ9kc2l&X-Amz-Signature=e8255e16abff3b035f74a862461673e5c4e511c36910b56f556a9aee532f16b1&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+      "image": "https://prod-files-secure.s3.us-west-2.amazonaws.com/bdbca5cc-1a6a-4f92-b63b-35bf16d62037/2051f94f-4e3f-42ef-8297-9a157df1f036/%ED%99%94%EB%A9%B4_%EC%BA%A1%EC%B2%98_2025-09-28_042020.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QNQHWHMP%2F20250927%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20250927T211032Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECQaCXVzLXdlc3QtMiJGMEQCIB6P3Y3lOcXx4MbX8yfWycV8YLGn%2Fm4%2BaTVn6S6D%2FxTNAiBthUqpQlUMkRGSKVzYpPpG%2BBMDhBnxfHAPIXnsayr20SqIBAit%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAAaDDYzNzQyMzE4MzgwNSIMrOnIou6XWW78MtlMKtwDaRQ8Co0sS4HUHvae3%2FFNjJM6ZPyL%2BIZS%2Bo1g%2BIDhcyb9kXCTzoKk7HavO6j%2Bt6rdw1sB2OaJt1amkQLvsPwELs6wZQ95DMu1TQNRilG4CG9zwZOb85kUSHH2HHuMi%2BXzzyGIcTb0Ugb1lk3zshVlL8XXQlbKDgW%2Bgkvg6dTQB4DdxKQpbtq5eFYHB6PZi6rexMMtirZ0pBetanGq34AnxZhDLsfiVD9lv7jeQA2uXNfxa3Xax4Gbt7Eah08bkCC2RvCLhelM09mFqNnFvxco9oJPz2RkUqKzj6NTBsS6z71dC9IPf0NrBBz9qWdWav3tUxGqw%2BEjX1ES3Q9pWlLDoyLeXAa9UNKmUybcqE7qzTr56tf9ddEUbWppb0rdAqeWVhGTjd8Wms2cjD1fYy9aGXQgM5Lo%2FUMf1X7yHH%2FIfh5FsFqWXwOOo%2B4SirGrOoecAetlO5goOEssQiP6Fu3%2B3yXI3abA6gguDXvDT%2Bm3PpQY95IOm7SWPTbcnKOnUO28WD7wqAMm1muA1%2FOkhbn6BjNHEnGOMlrN7F2PaWDJNZyLSQ8uvUsoIhIW%2BhF%2F9D7XpHPEkHAaYjsoEX5kWJlI0kqkijdCin2EDsOg4ERmNkuK1JP8YrGLLYQ1xG8wpYDhxgY6pgHn8BJ0Ft26GhtF9yk7iIBT5JT58bkcOlt2xAqvV%2Bumu0Ig1d2WrHh34nP8h9vhpm%2BakzuAHypDyR9MGgdk1hzvqibK%2FoCzEjuByDelCPM7Qk7c5S1zr8w8jiLUJM1YSadUXCqFhsKBHpIv3hMeq7yVFUFuZKTG6x1RmRlf3iomzbroAmM8iBWnlyINzvVEI4wSzazPWEo9DByjapSBVO6pBWPL5F6W&X-Amz-Signature=618ec6404fdc1a74f11a2c442314279b2f68f7651096e5cf5e2715b0c0921abf&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
       "description": "",
-      "lastEdited": "2025-09-27T19:47:00.000Z"
+      "lastEdited": "2025-09-27T19:47:00.000Z",
+      "url": "https://www.notion.so/2-27b680cac563803a89a6fd63c3926fc6",
+      "content": [
+        "[file]",
+        "[file]"
+      ]
     },
     {
       "id": "27a680ca-c563-80df-9224-ed73be02cdfb",
@@ -22,7 +55,18 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/3-27a680cac56380df9224ed73be02cdfb",
+      "content": [
+        "[table]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[file]"
+      ]
     },
     {
       "id": "27a680ca-c563-8086-8535-d0c794ce1059",
@@ -34,7 +78,11 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27a680cac56380868535d0c794ce1059",
+      "content": [
+        "[file]"
+      ]
     },
     {
       "id": "27a680ca-c563-8021-88e2-fe8038ecb5d1",
@@ -46,7 +94,12 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27a680cac563802188e2fe8038ecb5d1",
+      "content": [
+        "[file]",
+        "[file]"
+      ]
     },
     {
       "id": "27a680ca-c563-80db-ba50-f0c7ce76223b",
@@ -59,7 +112,12 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27a680cac56380dbba50f0c7ce76223b",
+      "content": [
+        "[file]",
+        "[file]"
+      ]
     },
     {
       "id": "27a680ca-c563-8034-a8af-f8c89b79bfab",
@@ -72,7 +130,12 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27a680cac5638034a8aff8c89b79bfab",
+      "content": [
+        "[file]",
+        "[file]"
+      ]
     },
     {
       "id": "27a680ca-c563-8021-9adb-f31536fdaa5d",
@@ -85,7 +148,12 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27a680cac56380219adbf31536fdaa5d",
+      "content": [
+        "[file]",
+        "[file]"
+      ]
     },
     {
       "id": "27a680ca-c563-80f0-8793-c3d4044e773f",
@@ -98,7 +166,16 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27a680cac56380f08793c3d4044e773f",
+      "content": [
+        "[file]",
+        "참가자 명단(기초 + 심화)",
+        "김하진, 박현민, 석시헌, 장영민, 전빈후, 전주호, 조동윤, 한승훈,",
+        "허예린, 강동연, 김민준, 전강민, 조재형, 허아영, 허지석, 김진우,",
+        "전태윤, 강태은, 이동휘, 이영호, 전재민, 박민재(고2), 박민재(중3)",
+        "김지후, 이현준, 정명진, 정서준"
+      ]
     },
     {
       "id": "27a680ca-c563-8053-a790-d6a46ef76ff3",
@@ -111,7 +188,12 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27a680cac5638053a790d6a46ef76ff3",
+      "content": [
+        "[file]",
+        "[file]"
+      ]
     },
     {
       "id": "27a680ca-c563-803c-aeba-fd28f2751b32",
@@ -124,20 +206,16 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
-    },
-    {
-      "id": "27a680ca-c563-8039-bc89-d4dd1f3cdb2e",
-      "title": "인공지능 특강(선형 회귀 모델)",
-      "date": "2025-01-13",
-      "tags": [
-        "Python",
-        "IM4U"
-      ],
-      "status": "완료",
-      "image": null,
-      "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27a680cac563803caebafd28f2751b32",
+      "content": [
+        "[file]",
+        "참가자 명단(기초 + 심화)",
+        "김하진, 박현민, 석시헌, 장영민, 전빈후, 전주호, 조동윤, 한승훈,",
+        "허예린, 강동연, 김민준, 전강민, 조재형, 허아영, 허지석, 김진우,",
+        "전태윤, 강태은, 이동휘, 이영호, 전재민, 박민재(고2), 박민재(중3)",
+        "김지후, 이현준, 정명진, 정서준"
+      ]
     },
     {
       "id": "27a680ca-c563-8072-ba34-e774455ef288",
@@ -150,7 +228,18 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/OOP-27a680cac5638072ba34e774455ef288",
+      "content": [
+        "[table]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[file]"
+      ]
     },
     {
       "id": "27b680ca-c563-8015-a9f2-eddc825a9b1f",
@@ -162,8 +251,19 @@
       "status": "완료",
       "image": null,
       "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
+      "lastEdited": "2025-09-27T17:45:00.000Z",
+      "url": "https://www.notion.so/27b680cac5638015a9f2eddc825a9b1f",
+      "content": [
+        "[table]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[table_row]",
+        "[file]"
+      ]
     }
   ],
-  "generatedAt": "2025-09-27T20:03:50.066Z"
+  "generatedAt": "2025-09-27T21:10:33.872Z"
 }
