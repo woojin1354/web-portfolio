@@ -14,16 +14,33 @@ function parseUrlLine(s) {
   return null;
 }
 
-// "📎 파일명 (host/…)" 등 첨부 라벨 줄 감지
+// 공백/빈 줄 판별
+function isBlankLine(s) {
+  return String(s ?? "").trim().length === 0;
+}
+
+// 첨부 라벨 줄 감지 (아이콘 + 라벨)
+// - 아이콘 뒤 공백 유무 허용
+// - 괄호(...) 요약은 제거
 function parseAttachmentLabel(s) {
-  const str = String(s ?? "");
-  const m = /^([📎📄🖼️🎞️🔖🔗])\s+(.+)$/.exec(str);
+  let str = String(s ?? "").trim().normalize("NFC");
+
+  // 라인 맨 앞 이모지 1개 추출 (Extended_Pictographic + optional FE0F/ZWJ)
+  const m = /^([\p{Extended_Pictographic}](?:[\uFE0F\u200D])?)/u.exec(str);
   if (!m) return null;
-  const icon = m[1];
-  let label = m[2].trim();
-  const paren = label.match(/\s*\((?:.+)\)\s*$/);
-  if (paren) label = label.slice(0, paren.index).trim(); // 괄호 부분 제거
+
+  const icon = m[1]; // 실제 앞쪽 이모지
+  let label = str.slice(m[0].length).trim();
+
+  // 라벨 앞에도 이모지가 남아 있으면 한 번 더 제거 (중복 방지)
+  label = label.replace(/^([\p{Extended_Pictographic}](?:[\uFE0F\u200D])?\s*)/u, "").trim();
+
+  // 뒷부분의 (host/… ) 요약은 제거
+  label = label.replace(/\s*\([^()]*\)\s*$/, "").trim();
+
+  // 길이 제한(선택)
   if (label.length > 120) label = label.slice(0, 119) + "…";
+
   return { icon, label };
 }
 
@@ -45,7 +62,7 @@ function Popup({ project, onClose }) {
     for (let i = 0; i < lines.length; i++) {
       const raw = String(lines[i] ?? "");
 
-      // 0) 안전 HTML 프리픽스 처리 (BOM/공백 허용)
+      // 0) 안전 HTML 프리픽스 (__HTML__:)
       const htmlMatch = /^\uFEFF?\s*__HTML__:(.*)$/s.exec(raw);
       if (htmlMatch) {
         out.push(
@@ -58,31 +75,47 @@ function Popup({ project, onClose }) {
         continue;
       }
 
-      // 1) 첨부 라벨 + 다음 줄 URL 페어 → 한 줄 링크로
+      // 1) 첨부 라벨 줄: 가장 가까운 URL 줄(최대 5줄 앞)을 찾아 페어링
       const att = parseAttachmentLabel(raw);
-      const next = lines[i + 1] ?? "";
-      const nextUrl = parseUrlLine(next);
-      if (att && nextUrl) {
-        out.push(
-          <div key={`att-${i}`} className="popup-line">
-            <a
-              href={nextUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="popup-attachment"
-            >
-              <span aria-hidden="true" className="popup-attachment-icon">
-                {att.icon}
-              </span>{" "}
-              <span className="popup-attachment-label">{att.label}</span>
-            </a>
-          </div>
-        );
-        i += 1; // URL 줄은 소비(숨김)
-        continue;
+      if (att) {
+        let pairedUrl = null;
+        let j = i + 1;
+        const LOOKAHEAD = 5; // 필요하면 범위 조절
+        while (j < lines.length && j <= i + LOOKAHEAD) {
+          const probe = String(lines[j] ?? "");
+          const url = parseUrlLine(probe);
+          if (url) {
+            pairedUrl = url;
+            break;
+          }
+          // URL 줄이 아니면, 빈 줄은 무시하고 계속 탐색
+          if (!isBlankLine(probe)) break; // 다른 내용이 끼면 중단
+          j++;
+        }
+
+        if (pairedUrl) {
+          out.push(
+            <div key={`att-${i}`} className="popup-line">
+              <a
+                href={pairedUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="popup-attachment"
+              >
+                <span aria-hidden="true" className="popup-attachment-icon">
+                  {att.icon}
+                </span>{" "}
+                <span className="popup-attachment-label">{att.label}</span>
+              </a>
+            </div>
+          );
+          i = j; // URL 줄까지 소비(숨김)
+          continue;
+        }
+        // URL을 못 찾으면 일반 텍스트로 통과 (fallback)
       }
 
-      // 2) (페어링 안 된) URL 단독 줄도 링크로
+      // 2) (페어링 안 된) URL 단독 줄
       const soloUrl = parseUrlLine(raw);
       if (soloUrl) {
         out.push(
@@ -96,41 +129,23 @@ function Popup({ project, onClose }) {
         continue;
       }
 
-      // 3) 백업: 프리픽스 없이 바로 <div class="notion-table-wrap"> 시작
-      if (/^\s*<div\s+class="notion-table-wrap"/.test(raw)) {
-        out.push(
-          <div
-            key={`html2-${i}`}
-            className="popup-line popup-table"
-            dangerouslySetInnerHTML={{ __html: raw }}
-          />
-        );
-        continue;
-      }
-
-      // 4) 기본 텍스트
+      // 3) 기본 텍스트
       out.push(
         <div key={`txt-${i}`} className="popup-line">
           {raw}
         </div>
       );
     }
+
     return out;
   };
 
   return (
-    <div
-      className="popup-overlay"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
+    <div className="popup-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="popup-content" onClick={stop}>
         <div className="popup-header">
           <h2 className="popup-title">{project.title}</h2>
-          <button className="popup-close" onClick={onClose} aria-label="닫기">
-            ×
-          </button>
+          <button className="popup-close" onClick={onClose} aria-label="닫기">×</button>
         </div>
 
         <div className="popup-body">
@@ -143,12 +158,7 @@ function Popup({ project, onClose }) {
 
         <div className="popup-footer">
           {project.url && (
-            <a
-              className="popup-link"
-              href={project.url}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a className="popup-link" href={project.url} target="_blank" rel="noreferrer">
               Notion에서 열기
             </a>
           )}

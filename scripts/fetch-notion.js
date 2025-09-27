@@ -1,7 +1,7 @@
-// scripts/fetch-notion.js  (ESM)
-// Node 20 내장 fetch 사용
-// 표(table)는 안전한 HTML 문자열로 만들고 "__HTML__:" 프리픽스를 붙여 전달.
-// 나머지 블록은 텍스트 라인으로 출력합니다.
+// scripts/fetch-notion.js (ESM, Node 20)
+// - 표(table)는 HTML 문자열에 "__HTML__:" 프리픽스 붙여 content에 넣음
+// - 첨부/이미지/북마크 등은 "라벨 한 줄" + "URL: ..." 한 줄로만 출력 (호스트 요약/캡션 생략)
+// - JSX 절대 사용하지 않음
 
 import fs from 'fs';
 import path from 'path';
@@ -26,18 +26,12 @@ const HTML_PREFIX = '__HTML__:'; // 안전 HTML 마커
 // ---------- Notion HTTP ----------
 async function notionPost(url, body) {
   const res = await fetch(url, { method: 'POST', headers: HEADERS, body: JSON.stringify(body ?? {}) });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Notion API error ${res.status} @ POST ${url} :: ${t}`);
-  }
+  if (!res.ok) throw new Error(`Notion API error ${res.status} @ POST ${url} :: ${await res.text()}`);
   return res.json();
 }
 async function notionGet(url) {
   const res = await fetch(url, { headers: HEADERS });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Notion API error ${res.status} @ GET ${url} :: ${t}`);
-  }
+  if (!res.ok) throw new Error(`Notion API error ${res.status} @ GET ${url} :: ${await res.text()}`);
   return res.json();
 }
 async function fetchAllPages() {
@@ -100,27 +94,11 @@ function pickImage(page, props) {
   return null;
 }
 
-// ---------- Text helpers ----------
-function richToText(rich) {
-  return (rich ?? []).map(r => r?.plain_text ?? '').join('');
-}
-function rtCellToTextArr(richArr) {
-  return (richArr ?? []).map(r => r?.plain_text ?? '').join('');
-}
-function truncate(s, n = 120) {
-  if (!s) return '';
-  return s.length > n ? s.slice(0, n - 1) + '…' : s;
-}
-function shortUrl(u) {
-  try {
-    const url = new URL(u);
-    const parts = url.pathname.split('/').filter(Boolean);
-    const tail = parts.slice(-1)[0] ?? '';
-    return `${url.host}/${tail.slice(0, 24)}${tail.length > 24 ? '…' : ''}`;
-  } catch { return u; }
-}
+// ---------- Helpers ----------
+function richToText(rich) { return (rich ?? []).map(r => r?.plain_text ?? '').join(''); }
+function rtCellToTextArr(richArr) { return (richArr ?? []).map(r => r?.plain_text ?? '').join(''); }
 
-// ---------- Children fetch (pagination) ----------
+// children (pagination)
 async function fetchBlockChildrenRaw(blockId) {
   const results = [];
   let cursor;
@@ -132,27 +110,23 @@ async function fetchBlockChildrenRaw(blockId) {
   return results;
 }
 
-// ---------- Safe HTML ----------
+// Safe HTML (table)
 function esc(s = '') {
-  return String(s)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
+  return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
 }
 function makeHtmlTable(rows, hasColHeader, hasRowHeader) {
-  // rows: string[][]
   const trs = rows.map((cells, ri) => {
     const tds = cells.map((txt, ci) => {
       const isHeader = (hasColHeader && ri === 0) || (hasRowHeader && ci === 0);
       const Tag = isHeader ? 'th' : 'td';
-      return `<${Tag}>${esc(String(txt ?? '')).replaceAll('\n', '<br/>')}</${Tag}>`;
+      return `<${Tag}>${esc(String(txt ?? '')).replaceAll('\n','<br/>')}</${Tag}>`;
     }).join('');
     return `<tr>${tds}</tr>`;
   }).join('');
   return `<div class="notion-table-wrap"><table class="notion-table"><tbody>${trs}</tbody></table></div>`;
 }
 
-// ---------- Block → plain lines / HTML(table) ----------
+// ---------- Block -> lines/HTML ----------
 async function blockToPlainLines(block, depth = 0) {
   const indent = '  '.repeat(Math.min(depth, 6));
   const out = [];
@@ -161,41 +135,26 @@ async function blockToPlainLines(block, depth = 0) {
 
   switch (t) {
     case 'paragraph': {
-      const txt = get();
-      if (txt.trim().length) out.push(indent + txt);
+      const txt = get(); if (txt.trim()) out.push(indent + txt);
       break;
     }
     case 'heading_1':
     case 'heading_2':
     case 'heading_3': {
-      const txt = get();
-      if (txt.trim().length) {
+      const txt = get(); if (txt.trim()) {
         const mark = t === 'heading_1' ? '# ' : t === 'heading_2' ? '## ' : '### ';
         out.push(indent + mark + txt);
       }
       break;
     }
-    case 'bulleted_list_item': {
-      const txt = get();
-      out.push(indent + '• ' + txt);
-      break;
-    }
-    case 'numbered_list_item': {
-      const txt = get();
-      out.push(indent + '1. ' + txt);
-      break;
-    }
+    case 'bulleted_list_item': { out.push(indent + '• ' + get()); break; }
+    case 'numbered_list_item': { out.push(indent + '1. ' + get()); break; } // 간단 표기
     case 'to_do': {
       const txt = richToText(block.to_do?.rich_text);
-      const checked = block.to_do?.checked ? '[x]' : '[ ]';
-      out.push(indent + `${checked} ${txt}`);
+      out.push(indent + `${block.to_do?.checked ? '[x]' : '[ ]'} ${txt}`);
       break;
     }
-    case 'quote': {
-      const txt = get();
-      out.push(indent + `> ${txt}`);
-      break;
-    }
+    case 'quote': { out.push(indent + `> ${get()}`); break; }
     case 'callout': {
       const txt = richToText(block.callout?.rich_text);
       const emoji = block.callout?.icon?.emoji ?? '💡';
@@ -210,68 +169,53 @@ async function blockToPlainLines(block, depth = 0) {
       out.push(indent + '```');
       break;
     }
-    case 'toggle': {
-      const txt = richToText(block.toggle?.rich_text);
-      out.push(indent + '▸ ' + txt);
-      break;
-    }
+    case 'toggle': { out.push(indent + '▸ ' + richToText(block.toggle?.rich_text)); break; }
 
-    // ---- Media / Links (요약 + 실제 URL 별도 줄) ----
+    // 미디어/링크: 라벨 한 줄 + URL 줄 (간단/일관)
     case 'image': {
       const d = block.image;
       const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
-      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
-      const label = url ? `(${shortUrl(url)})` : '';
-      out.push(indent + `🖼️ 이미지 ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
+      out.push(indent + `🖼️ 이미지`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
     case 'file': {
       const d = block.file;
       const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
-      const name = d?.name ?? '파일';
-      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
-      const label = url ? `(${shortUrl(url)})` : '';
-      out.push(indent + `📎 ${name} ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
+      const name = d?.name || '파일';
+      out.push(indent + `📎 ${name}`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
     case 'pdf': {
       const d = block.pdf;
       const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
-      const name = d?.name ?? 'PDF';
-      const label = url ? `(${shortUrl(url)})` : '';
-      out.push(indent + `📄 ${name} ${label}`);
+      const name = d?.name || 'PDF';
+      out.push(indent + `📄 ${name}`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
     case 'video': {
       const d = block.video;
       const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
-      const label = url ? `(${shortUrl(url)})` : '';
-      out.push(indent + `🎞️ 비디오 ${label}`);
+      out.push(indent + `🎞️ 비디오`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
     case 'embed': {
-      const d = block.embed;
-      const url = d?.url ?? null;
-      const label = url ? `(${shortUrl(url)})` : '';
-      out.push(indent + `🔗 임베드 ${label}`);
+      const url = block.embed?.url ?? null;
+      out.push(indent + `🔗 임베드`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
     case 'bookmark': {
-      const d = block.bookmark;
-      const url = d?.url ?? null;
-      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
-      const label = url ? `(${shortUrl(url)})` : '';
-      out.push(indent + `🔖 북마크 ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
+      const url = block.bookmark?.url ?? null;
+      out.push(indent + `🔖 북마크`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
 
-    // ---- Table → HTML 문자열 + 프리픽스 ----
+    // 표 → HTML 문자열 + 프리픽스
     case 'table': {
       const hasColHeader = !!block.table?.has_column_header;
       const hasRowHeader = !!block.table?.has_row_header;
@@ -279,10 +223,9 @@ async function blockToPlainLines(block, depth = 0) {
       const rows = children
         .filter(c => c.type === 'table_row')
         .map(c => (c.table_row?.cells ?? []).map(rtCellToTextArr));
-
       const html = makeHtmlTable(rows, hasColHeader, hasRowHeader);
-      out.push(HTML_PREFIX + html); // "__HTML__:<div …>" 한 줄
-      return out; // 표는 여기서 종료
+      out.push(HTML_PREFIX + html);
+      return out;
     }
 
     default: {
@@ -294,10 +237,7 @@ async function blockToPlainLines(block, depth = 0) {
   // children 재귀 (table 제외)
   if (block.has_children && block.type !== 'table') {
     const kids = await fetchBlockChildrenRaw(block.id);
-    for (const kb of kids) {
-      const childLines = await blockToPlainLines(kb, depth + 1);
-      for (const ln of childLines) out.push(ln);
-    }
+    for (const kb of kids) out.push(...await blockToPlainLines(kb, depth + 1));
   }
   return out;
 }
@@ -306,20 +246,17 @@ async function fetchPagePlainContent(pageId) {
   try {
     const roots = await fetchBlockChildrenRaw(pageId);
     const lines = [];
-    for (const b of roots) {
-      const part = await blockToPlainLines(b, 0);
-      lines.push(...part);
-    }
-    // 연속 공백 줄 정리
-    const trimmed = [];
+    for (const b of roots) lines.push(...await blockToPlainLines(b, 0));
+    // 연속 공백 1줄로 정리
+    const out = [];
     let prevEmpty = false;
     for (const l of lines) {
       const empty = !l.trim();
       if (empty && prevEmpty) continue;
-      trimmed.push(l);
+      out.push(l);
       prevEmpty = empty;
     }
-    return trimmed;
+    return out;
   } catch (e) {
     console.error('fetchPagePlainContent error:', e.message);
     return [];
@@ -344,13 +281,11 @@ function mapPropsOnly(page) {
 
 async function main() {
   const pages = await fetchAllPages();
-  const projects = await Promise.all(
-    pages.map(async (page) => {
-      const base = mapPropsOnly(page);
-      const content = await fetchPagePlainContent(page.id); // 텍스트 라인 + (table은 HTML-프리픽스)
-      return { ...base, content };
-    })
-  );
+  const projects = await Promise.all(pages.map(async (page) => {
+    const base = mapPropsOnly(page);
+    const content = await fetchPagePlainContent(page.id);
+    return { ...base, content };
+  }));
 
   const out = { projects, generatedAt: new Date().toISOString() };
   const outPath = path.join(process.cwd(), 'public', 'projects.json');

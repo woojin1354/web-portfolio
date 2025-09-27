@@ -34,7 +34,7 @@
   line-height: 1.55;
   overflow-x: auto;
 }
-.popup-line { margin: 4px 0; word-break: break-word; }
+.popup-line { margin: 4px 0; }
 .popup-table { margin: 10px 0; }
 .notion-table-wrap { overflow-x: auto; margin: 12px 0; }
 .notion-table {
@@ -62,13 +62,10 @@
   text-decoration: none;
 }
 
-.popup-attachment {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
+.popup-attachment,
 .popup-attachment-icon {
-  margin-right: 6px;     /* 아이콘과 텍스트 간격 */
-  font-size: 1.1em;      /* 아이콘 조금 크게 */
+  font-family: system-ui, -apple-system, "Apple Color Emoji", "Segoe UI Emoji",
+               "Noto Color Emoji", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .popup-attachment-label {
