@@ -2,8 +2,6 @@
 import { useEffect } from "react";
 import "./Popup.css";
 
-const HTML_PREFIX = "__HTML__:";
-
 // URL: ... 줄에서 실제 URL을 추출 (플레인/앵커 모두 지원)
 function parseUrlLine(s) {
   const str = String(s ?? "");
