@@ -4,8 +4,8 @@ import DefaultImage from "./assets/images/ProfileImage.png";
 
 function ProjectGrid() {
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
+  const [loading] = useState(true);
+  const [error] = useState(null);
   const getStatusColor = (status) => {
     switch (status) {
       case "완료":   return "#2d5a2d";
