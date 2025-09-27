@@ -1,7 +1,6 @@
 import { Client } from '@notionhq/client';
 import fs from 'fs';
 import path from 'path';
-import DefaultImage from "../assets/images/ProfileImage.png";
 
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
@@ -50,7 +49,7 @@ function mapPage(page) {
       ? page.cover.external?.url
       : page.cover.file?.url;
   }
-  if (!image) image = DefaultImage;
+  if (!image) image = null;
   
   return {
     id: page.id,
