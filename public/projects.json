@@ -1,6 +1,18 @@
 {
   "projects": [
     {
+      "id": "27b680ca-c563-803a-89a6-fd63c3926fc6",
+      "title": "알고-파티 2회(행사)",
+      "date": "2025-08-10",
+      "tags": [
+        "IM4U"
+      ],
+      "status": "알수없음",
+      "image": null,
+      "description": "",
+      "lastEdited": "2025-09-27T19:20:00.000Z"
+    },
+    {
       "id": "27a680ca-c563-80df-9224-ed73be02cdfb",
       "title": "머신러닝 특강(오렌지3)",
       "date": "2024-07-22",
@@ -151,19 +163,7 @@
       "image": null,
       "description": "",
       "lastEdited": "2025-09-27T17:45:00.000Z"
-    },
-    {
-      "id": "27b680ca-c563-803a-89a6-fd63c3926fc6",
-      "title": "알고-파티 2회(행사)",
-      "date": "2025-08-10",
-      "tags": [
-        "IM4U"
-      ],
-      "status": "알수없음",
-      "image": null,
-      "description": "",
-      "lastEdited": "2025-09-27T17:45:00.000Z"
     }
   ],
-  "generatedAt": "2025-09-27T19:17:05.830Z"
+  "generatedAt": "2025-09-27T19:21:48.152Z"
 }
