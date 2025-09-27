@@ -1,7 +1,7 @@
 // scripts/fetch-notion.js  (ESM)
 // Node 20 내장 fetch 사용
-// Popup.js가 content: string[]을 렌더하므로,
-// 표(table)만 HTML로, 나머지 블록은 읽기 좋은 텍스트 라인으로 출력합니다.
+// 표(table)는 안전한 HTML 문자열로 만들고, "__HTML__:" 프리픽스를 붙여 전달합니다.
+// 나머지 블록은 텍스트 라인으로 만듭니다.
 
 import fs from 'fs';
 import path from 'path';
@@ -20,6 +20,8 @@ const HEADERS = {
   'Notion-Version': '2022-06-28',
   'Content-Type': 'application/json',
 };
+
+const HTML_PREFIX = '__HTML__:'; // ← 안전 HTML 마커
 
 // ========== Notion HTTP ==========
 async function notionPost(url, body) {
@@ -147,6 +149,7 @@ function makeHtmlTable(rows, hasColHeader, hasRowHeader) {
     }).join('');
     return `<tr>${tds}</tr>`;
   }).join('');
+  // 안전하게 우리가 만든 HTML임을 나타내는 wrapper + 클래스
   return `<div class="notion-table-wrap"><table class="notion-table"><tbody>${trs}</tbody></table></div>`;
 }
 
@@ -269,7 +272,7 @@ async function blockToPlainLines(block, depth = 0) {
       break;
     }
 
-    // ==== Table -> HTML 테이블 문자열 ====
+    // ==== Table → HTML 테이블 문자열 + 프리픽스 ====
     case 'table': {
       const hasColHeader = !!block.table?.has_column_header;
       const hasRowHeader = !!block.table?.has_row_header;
@@ -279,8 +282,8 @@ async function blockToPlainLines(block, depth = 0) {
         .map(c => (c.table_row?.cells ?? []).map(rtCellToTextArr));
 
       const html = makeHtmlTable(rows, hasColHeader, hasRowHeader);
-      out.push(html);            // 안전하게 escape된 HTML 문자열
-      return out;                // 표는 여기서 종료 (자식 재귀 X)
+      out.push(HTML_PREFIX + html);   // ← "__HTML__:" + html
+      return out; // 표는 여기서 종료
     }
 
     default: {
@@ -324,6 +327,7 @@ async function fetchPagePlainContent(pageId) {
   }
 }
 
+// ========== Mapping & Main ==========
 function mapPropsOnly(page) {
   const props = page.properties ?? {};
   return {
@@ -344,7 +348,7 @@ async function main() {
   const projects = await Promise.all(
     pages.map(async (page) => {
       const base = mapPropsOnly(page);
-      const content = await fetchPagePlainContent(page.id); // 텍스트 라인 + (table은 HTML 문자열)
+      const content = await fetchPagePlainContent(page.id); // 텍스트 라인 + (table은 HTML-프리픽스)
       return { ...base, content };
     })
   );
