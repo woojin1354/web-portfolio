@@ -1,5 +1,7 @@
 // scripts/fetch-notion.js  (ESM)
-// Node 20 내장 fetch 사용
+// Node 20 내장 fetch 사용 - Popup.js가 content: string[]만 읽으므로
+// 표/파일 등을 '사람이 읽을 수 있는 평문'으로 ASCII 렌더링합니다.
+
 import fs from 'fs';
 import path from 'path';
 
@@ -97,32 +99,74 @@ function pickImage(page, props) {
   return null;
 }
 
-// --- blocks → plain text lines ---
-// 모든 하위 블록을 재귀로 펼쳐서 plain text 배열로 변환합니다.
-async function fetchBlockChildren(blockId) {
-  const lines = [];
-  let cursor;
-  do {
-    const data = await notionGet(`${BASE}/blocks/${blockId}/children${cursor ? `?start_cursor=${cursor}` : ''}`);
-    for (const b of data.results ?? []) {
-      lines.push(...await blockToPlainLines(b));
-    }
-    cursor = data.has_more ? data.next_cursor : undefined;
-  } while (cursor);
-  return lines;
-}
-
+// --- helpers for text rendering ---
 function richToText(rich) {
   return (rich ?? []).map(r => r?.plain_text ?? '').join('');
 }
+function rtCellToTextArr(richArr) {
+  // table_cell의 rich_text[] → 하나의 문자열로
+  return (richArr ?? []).map(r => r?.plain_text ?? '').join('');
+}
+function truncate(s, n = 120) {
+  if (!s) return '';
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
 
+// ASCII 테이블 유틸
+function makeAsciiTable(rows, hasColHeader, hasRowHeader) {
+  // rows: string[][]  (각 행의 셀 텍스트)
+  if (!rows.length) return ['(빈 표)'];
+
+  const colCount = Math.max(...rows.map(r => r.length));
+  const widths = Array.from({ length: colCount }, (_, i) =>
+    Math.max(...rows.map(r => (r[i]?.length ?? 0)), 3)
+  );
+
+  const sep = '+' + widths.map(w => '-'.repeat(w + 2)).join('+') + '+';
+
+  const lineFor = (cells) =>
+    '|' + cells.map((c, i) => ' ' + (c ?? '').padEnd(widths[i]) + ' ').join('|') + '|';
+
+  const out = [];
+  out.push('(표)');
+  out.push(sep);
+
+  rows.forEach((row, ri) => {
+    // 행 헤더 효과: 첫 칸만 굵게는 못하지만 접두사로 표기
+    const cells = row.map((c, ci) => {
+      if ((hasRowHeader && ci === 0) || (hasColHeader && ri === 0)) {
+        return String(c ?? '') + ''; // Popup은 텍스트만이므로 별도 마킹 생략
+      }
+      return String(c ?? '');
+    });
+
+    out.push(lineFor(cells));
+    if (hasColHeader && ri === 0) out.push(sep);
+  });
+
+  out.push(sep);
+  return out;
+}
+
+// children fetcher (분량 커질 수 있어 while-페이지네이션 처리)
+async function fetchBlockChildrenRaw(blockId) {
+  const results = [];
+  let cursor;
+  do {
+    const data = await notionGet(`${BASE}/blocks/${blockId}/children${cursor ? `?start_cursor=${cursor}` : ''}`);
+    results.push(...(data.results ?? []));
+    cursor = data.has_more ? data.next_cursor : undefined;
+  } while (cursor);
+  return results;
+}
+
+// --- blocks -> "읽기 좋은 평문 라인" ---
+// 주의: Popup.js가 줄 단위로만 보여주므로, 링크/강조/색상 등은 텍스트에 녹여 표시
 async function blockToPlainLines(block, depth = 0) {
   const indent = '  '.repeat(Math.min(depth, 6));
   const out = [];
   const t = block.type;
-
-  // 텍스트 본문 추출
-  const get = (k) => richToText(block[t]?.rich_text);
+  const get = () => richToText(block[t]?.rich_text);
 
   switch (t) {
     case 'paragraph': {
@@ -147,7 +191,7 @@ async function blockToPlainLines(block, depth = 0) {
     }
     case 'numbered_list_item': {
       const txt = get();
-      out.push(indent + '1. ' + txt);
+      out.push(indent + '1. ' + txt); // 실번호는 Popup 제한상 유지 어려움
       break;
     }
     case 'to_do': {
@@ -163,7 +207,8 @@ async function blockToPlainLines(block, depth = 0) {
     }
     case 'callout': {
       const txt = richToText(block.callout?.rich_text);
-      out.push(indent + `💡 ${txt}`);
+      const emoji = block.callout?.icon?.emoji ?? '💡';
+      out.push(indent + `${emoji} ${txt}`);
       break;
     }
     case 'code': {
@@ -179,34 +224,87 @@ async function blockToPlainLines(block, depth = 0) {
       out.push(indent + '▸ ' + txt);
       break;
     }
-    case 'bookmark':
-    case 'link_to_page':
-    case 'equation':
-    case 'synced_block':
-    case 'template':
-    case 'table':
-    case 'table_row':
-    case 'video':
-    case 'image':
-    case 'pdf':
-    case 'file':
-    case 'embed': {
-      // 미지원/비텍스트 블록은 간단한 표시만
-      out.push(indent + `[${t}]`);
+
+    // === 리치 미디어/링크: 사람이 읽을 수 있게 1~2줄 요약 ===
+    case 'image': {
+      const d = block.image;
+      const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
+      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
+      out.push(indent + `🖼️ 이미지${cap ? `: ${truncate(cap, 100)}` : ''}`);
+      if (url) out.push(indent + `URL: ${url}`);
       break;
     }
+    case 'file': {
+      const d = block.file;
+      const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
+      const name = d?.name ?? '파일';
+      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
+      out.push(indent + `📎 파일: ${name}${cap ? ` — ${truncate(cap, 100)}` : ''}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'pdf': {
+      const d = block.pdf;
+      const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
+      const name = d?.name ?? 'PDF';
+      out.push(indent + `📄 PDF: ${name}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'video': {
+      const d = block.video;
+      const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
+      out.push(indent + `🎞️ 비디오`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'embed': {
+      const d = block.embed;
+      const url = d?.url ?? null;
+      out.push(indent + `🔗 임베드`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'bookmark': {
+      const d = block.bookmark;
+      const url = d?.url ?? null;
+      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
+      out.push(indent + `🔖 북마크${cap ? `: ${truncate(cap, 100)}` : ''}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+
+    // === 표: ASCII 테이블로 구성해 하나의 블록으로 렌더 ===
+    case 'table': {
+      const tw = block.table?.table_width ?? 0;
+      const hasColHeader = !!block.table?.has_column_header;
+      const hasRowHeader = !!block.table?.has_row_header;
+
+      // 자식(table_row) 불러와서 셀 텍스트 추출
+      const children = await fetchBlockChildrenRaw(block.id);
+      const rows = children
+        .filter(c => c.type === 'table_row')
+        .map(c => (c.table_row?.cells ?? []).map(rtCellToTextArr));
+
+      const lines = makeAsciiTable(rows, hasColHeader, hasRowHeader);
+      out.push(...lines.map(l => indent + l));
+      // table은 여기서 끝(행을 개별 라인으로 이미 변환했으므로 재귀 불필요)
+      return out;
+    }
+
+    // 알 수 없는/미지원은 타입만
     default: {
-      // 알 수 없는 타입도 라인으로 표시
       out.push(indent + `[${t}]`);
       break;
     }
   }
 
-  // 하위 블록 재귀
-  if (block.has_children) {
-    const childLines = await fetchBlockChildren(block.id);
-    for (const ln of childLines) {
-      out.push(ln);
+  // 하위 블록 재귀 (표는 위에서 처리했으므로 제외)
+  if (block.has_children && block.type !== 'table') {
+    const kids = await fetchBlockChildrenRaw(block.id);
+    for (const kb of kids) {
+      const childLines = await blockToPlainLines(kb, depth + 1);
+      for (const ln of childLines) out.push(ln);
     }
   }
   return out;
@@ -214,7 +312,23 @@ async function blockToPlainLines(block, depth = 0) {
 
 async function fetchPagePlainContent(pageId) {
   try {
-    return await fetchBlockChildren(pageId);
+    // 루트: pageId 자체의 children
+    const roots = await fetchBlockChildrenRaw(pageId);
+    const lines = [];
+    for (const b of roots) {
+      const part = await blockToPlainLines(b, 0);
+      lines.push(...part);
+    }
+    // 불필요한 연속 공백 라인 정리
+    const trimmed = [];
+    let prevEmpty = false;
+    for (const l of lines) {
+      const empty = !l.trim();
+      if (empty && prevEmpty) continue;
+      trimmed.push(l);
+      prevEmpty = empty;
+    }
+    return trimmed;
   } catch (e) {
     console.error('fetchPagePlainContent error:', e.message);
     return [];
@@ -230,7 +344,7 @@ function mapPropsOnly(page) {
     tags: pickTags(props),
     status: pickStatus(props),
     image: pickImage(page, props),
-    description: '', // 별도 속성을 쓰지 않으면 비워둠
+    description: '',
     lastEdited: page.last_edited_time,
     url: page.url,
   };
@@ -239,12 +353,11 @@ function mapPropsOnly(page) {
 async function main() {
   const pages = await fetchAllPages();
 
-  // 페이지 본문까지 포함해서 병렬 처리
   const projects = await Promise.all(
     pages.map(async (page) => {
       const base = mapPropsOnly(page);
-      const content = await fetchPagePlainContent(page.id); // ← 전체 본문(plain lines)
-      return { ...base, content }; // content: string[]
+      const content = await fetchPagePlainContent(page.id); // 평문화된 리치 텍스트 라인
+      return { ...base, content };
     })
   );
 
