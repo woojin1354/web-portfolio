@@ -60,8 +60,10 @@ function mapPage(page) {
     props['Multi-select']?.multi_select?.map(t => t.name) ??
     props.Tags?.multi_select?.map(t => t.name) ?? [];
 
-  const status = props.Status?.select?.name ?? '알수없음';
-
+  const status =
+    props.Status?.status?.name ??
+    props.Status?.select?.name ??
+    '알수없음';
 
   let image = null;
   if (page.cover) {
