@@ -1,6 +1,7 @@
 // scripts/fetch-notion.js  (ESM)
-// Node 20 내장 fetch 사용 - Popup.js가 content: string[]만 읽으므로
-// 표/파일 등을 '사람이 읽을 수 있는 평문'으로 ASCII 렌더링합니다.
+// Node 20 내장 fetch 사용
+// Popup.js가 content: string[]만 렌더하므로,
+// 표/파일/이미지 등을 '읽기 좋은 평문'으로 ASCII 렌더합니다.
 
 import fs from 'fs';
 import path from 'path';
@@ -20,8 +21,7 @@ const HEADERS = {
   'Content-Type': 'application/json',
 };
 
-const plain = (rich) => (rich?.map?.(r => r?.plain_text ?? '').join('') ?? '');
-
+// ========== Notion HTTP ==========
 async function notionPost(url, body) {
   const res = await fetch(url, { method: 'POST', headers: HEADERS, body: JSON.stringify(body ?? {}) });
   if (!res.ok) {
@@ -30,7 +30,6 @@ async function notionPost(url, body) {
   }
   return res.json();
 }
-
 async function notionGet(url) {
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) {
@@ -39,7 +38,6 @@ async function notionGet(url) {
   }
   return res.json();
 }
-
 async function fetchAllPages() {
   const pages = [];
   let body = { page_size: 100, sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }] };
@@ -52,7 +50,8 @@ async function fetchAllPages() {
   return pages;
 }
 
-// --- properties pickers ---
+// ========== Property pickers ==========
+const plain = (rich) => (rich?.map?.(r => r?.plain_text ?? '').join('') ?? '');
 function pickTitle(props) {
   const cand = props.Title?.title ?? props.Name?.title;
   if (cand?.length) return plain(cand);
@@ -99,56 +98,61 @@ function pickImage(page, props) {
   return null;
 }
 
-// --- helpers for text rendering ---
+// ========== Text helpers ==========
 function richToText(rich) {
   return (rich ?? []).map(r => r?.plain_text ?? '').join('');
 }
 function rtCellToTextArr(richArr) {
-  // table_cell의 rich_text[] → 하나의 문자열로
   return (richArr ?? []).map(r => r?.plain_text ?? '').join('');
 }
 function truncate(s, n = 120) {
   if (!s) return '';
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
-
-// ASCII 테이블 유틸
-function makeAsciiTable(rows, hasColHeader, hasRowHeader) {
-  // rows: string[][]  (각 행의 셀 텍스트)
-  if (!rows.length) return ['(빈 표)'];
-
-  const colCount = Math.max(...rows.map(r => r.length));
-  const widths = Array.from({ length: colCount }, (_, i) =>
-    Math.max(...rows.map(r => (r[i]?.length ?? 0)), 3)
-  );
-
-  const sep = '+' + widths.map(w => '-'.repeat(w + 2)).join('+') + '+';
-
-  const lineFor = (cells) =>
-    '|' + cells.map((c, i) => ' ' + (c ?? '').padEnd(widths[i]) + ' ').join('|') + '|';
-
-  const out = [];
-  out.push('(표)');
-  out.push(sep);
-
-  rows.forEach((row, ri) => {
-    // 행 헤더 효과: 첫 칸만 굵게는 못하지만 접두사로 표기
-    const cells = row.map((c, ci) => {
-      if ((hasRowHeader && ci === 0) || (hasColHeader && ri === 0)) {
-        return String(c ?? '') + ''; // Popup은 텍스트만이므로 별도 마킹 생략
-      }
-      return String(c ?? '');
-    });
-
-    out.push(lineFor(cells));
-    if (hasColHeader && ri === 0) out.push(sep);
-  });
-
-  out.push(sep);
-  return out;
+function shortUrl(u) {
+  try {
+    const url = new URL(u);
+    const parts = url.pathname.split('/').filter(Boolean);
+    const tail = parts.slice(-1)[0] ?? '';
+    return `${url.host}/${tail.slice(0, 24)}${tail.length > 24 ? '…' : ''}`;
+  } catch { return u; }
 }
 
-// children fetcher (분량 커질 수 있어 while-페이지네이션 처리)
+// ========== Display width (CJK 2폭 근사) ==========
+function isWide(ch) {
+  const code = ch.codePointAt(0);
+  return (
+    (code >= 0x1100 && code <= 0x115F) || // Hangul Jamo
+    (code >= 0x2E80 && code <= 0xA4CF) || // CJK Radicals.. Yi
+    (code >= 0xAC00 && code <= 0xD7A3) || // Hangul Syllables
+    (code >= 0xF900 && code <= 0xFAFF) || // CJK Compatibility Ideographs
+    (code >= 0xFE10 && code <= 0xFE6F) || // Vertical forms
+    (code >= 0xFF00 && code <= 0xFF60) || // Fullwidth
+    (code >= 0xFFE0 && code <= 0xFFE6)
+  );
+}
+function dispWidth(str) {
+  let w = 0;
+  for (const ch of str ?? '') w += isWide(ch) ? 2 : 1;
+  return w;
+}
+function cutToWidth(str, limit) {
+  if (dispWidth(str) <= limit) return str;
+  let w = 0, out = '';
+  for (const ch of str) {
+    const plus = isWide(ch) ? 2 : 1;
+    if (w + plus > Math.max(1, limit - 1)) break;
+    out += ch; w += plus;
+  }
+  return out + '…';
+}
+function padToWidth(str, target) {
+  // 표시폭 기준 우측 패딩
+  const w = dispWidth(str);
+  if (w >= target) return str;
+  return str + ' '.repeat(target - w);
+}
+
 async function fetchBlockChildrenRaw(blockId) {
   const results = [];
   let cursor;
@@ -160,8 +164,48 @@ async function fetchBlockChildrenRaw(blockId) {
   return results;
 }
 
-// --- blocks -> "읽기 좋은 평문 라인" ---
-// 주의: Popup.js가 줄 단위로만 보여주므로, 링크/강조/색상 등은 텍스트에 녹여 표시
+// ========== ASCII Table (multiline, CJK-aware) ==========
+function makeAsciiTableMultiline(rowsRaw, hasColHeader, hasRowHeader, maxColWidth = 56) {
+  if (!rowsRaw.length) return ['(빈 표)'];
+
+  // 1) 셀을 줄 배열로 분해
+  const rowsSplit = rowsRaw.map(row =>
+    row.map(cell => String(cell ?? '').split('\n').map(s => s.trim()))
+  );
+
+  // 2) 컬럼 폭 계산 (표시폭 기준, 상한 적용)
+  const colCount = Math.max(...rowsSplit.map(r => r.length));
+  const widths = Array.from({ length: colCount }, (_, ci) => {
+    let maxW = 3;
+    for (const r of rowsSplit) {
+      const lines = r[ci] ?? [''];
+      for (const ln of lines) maxW = Math.max(maxW, dispWidth(ln));
+    }
+    return Math.min(maxW, maxColWidth);
+  });
+
+  const sep = '+' + widths.map(w => '-'.repeat(w + 2)).join('+') + '+';
+
+  // 3) 행 렌더
+  const out = ['(표)', sep];
+  rowsSplit.forEach((row, ri) => {
+    const rowHeight = Math.max(...row.map(c => (c?.length ?? 0)), 1);
+    for (let k = 0; k < rowHeight; k++) {
+      const lineCells = [];
+      for (let ci = 0; ci < colCount; ci++) {
+        const lines = row[ci] ?? [''];
+        const raw = lines[k] ?? '';
+        const cut = cutToWidth(raw, widths[ci]);
+        lineCells.push(' ' + padToWidth(cut, widths[ci]) + ' ');
+      }
+      out.push('|' + lineCells.join('|') + '|');
+    }
+    if (hasColHeader && ri === 0) out.push(sep);
+  });
+  out.push(sep);
+  return out;
+}
+
 async function blockToPlainLines(block, depth = 0) {
   const indent = '  '.repeat(Math.min(depth, 6));
   const out = [];
@@ -191,7 +235,7 @@ async function blockToPlainLines(block, depth = 0) {
     }
     case 'numbered_list_item': {
       const txt = get();
-      out.push(indent + '1. ' + txt); // 실번호는 Popup 제한상 유지 어려움
+      out.push(indent + '1. ' + txt); // 실제 번호는 유지 어려움
       break;
     }
     case 'to_do': {
@@ -225,12 +269,12 @@ async function blockToPlainLines(block, depth = 0) {
       break;
     }
 
-    // === 리치 미디어/링크: 사람이 읽을 수 있게 1~2줄 요약 ===
     case 'image': {
       const d = block.image;
       const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
       const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
-      out.push(indent + `🖼️ 이미지${cap ? `: ${truncate(cap, 100)}` : ''}`);
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `🖼️ 이미지 ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
@@ -239,7 +283,8 @@ async function blockToPlainLines(block, depth = 0) {
       const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
       const name = d?.name ?? '파일';
       const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
-      out.push(indent + `📎 파일: ${name}${cap ? ` — ${truncate(cap, 100)}` : ''}`);
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `📎 ${name} ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
@@ -247,21 +292,24 @@ async function blockToPlainLines(block, depth = 0) {
       const d = block.pdf;
       const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
       const name = d?.name ?? 'PDF';
-      out.push(indent + `📄 PDF: ${name}`);
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `📄 ${name} ${label}`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
     case 'video': {
       const d = block.video;
       const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
-      out.push(indent + `🎞️ 비디오`);
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `🎞️ 비디오 ${label}`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
     case 'embed': {
       const d = block.embed;
       const url = d?.url ?? null;
-      out.push(indent + `🔗 임베드`);
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `🔗 임베드 ${label}`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
@@ -269,37 +317,33 @@ async function blockToPlainLines(block, depth = 0) {
       const d = block.bookmark;
       const url = d?.url ?? null;
       const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
-      out.push(indent + `🔖 북마크${cap ? `: ${truncate(cap, 100)}` : ''}`);
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `🔖 북마크 ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
       if (url) out.push(indent + `URL: ${url}`);
       break;
     }
 
-    // === 표: ASCII 테이블로 구성해 하나의 블록으로 렌더 ===
+    // ==== Table → 멀티라인 ASCII 테이블 ====
     case 'table': {
-      const tw = block.table?.table_width ?? 0;
       const hasColHeader = !!block.table?.has_column_header;
       const hasRowHeader = !!block.table?.has_row_header;
-
-      // 자식(table_row) 불러와서 셀 텍스트 추출
       const children = await fetchBlockChildrenRaw(block.id);
       const rows = children
         .filter(c => c.type === 'table_row')
         .map(c => (c.table_row?.cells ?? []).map(rtCellToTextArr));
 
-      const lines = makeAsciiTable(rows, hasColHeader, hasRowHeader);
+      const lines = makeAsciiTableMultiline(rows, hasColHeader, hasRowHeader);
       out.push(...lines.map(l => indent + l));
-      // table은 여기서 끝(행을 개별 라인으로 이미 변환했으므로 재귀 불필요)
-      return out;
+      return out; // 표는 여기서 완료 (아래 재귀 생략)
     }
 
-    // 알 수 없는/미지원은 타입만
     default: {
       out.push(indent + `[${t}]`);
       break;
     }
   }
 
-  // 하위 블록 재귀 (표는 위에서 처리했으므로 제외)
+  // children 재귀 (table 제외)
   if (block.has_children && block.type !== 'table') {
     const kids = await fetchBlockChildrenRaw(block.id);
     for (const kb of kids) {
@@ -312,14 +356,13 @@ async function blockToPlainLines(block, depth = 0) {
 
 async function fetchPagePlainContent(pageId) {
   try {
-    // 루트: pageId 자체의 children
     const roots = await fetchBlockChildrenRaw(pageId);
     const lines = [];
     for (const b of roots) {
       const part = await blockToPlainLines(b, 0);
       lines.push(...part);
     }
-    // 불필요한 연속 공백 라인 정리
+    // 연속 공백 줄 정리
     const trimmed = [];
     let prevEmpty = false;
     for (const l of lines) {
@@ -352,7 +395,6 @@ function mapPropsOnly(page) {
 
 async function main() {
   const pages = await fetchAllPages();
-
   const projects = await Promise.all(
     pages.map(async (page) => {
       const base = mapPropsOnly(page);
