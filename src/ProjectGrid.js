@@ -4,31 +4,46 @@ import DefaultImage from "./assets/images/ProfileImage.png";
 
 function ProjectGrid() {
   const [projects, setProjects] = useState([]);
-  const [loading] = useState(true);
-  const [error] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const getStatusColor = (status) => {
     switch (status) {
-      case "완료":   return "#2d5a2d";
-      case "진행중": return "#ef6c00";
-      case "계획중": return "#1565c0";
-      default:       return "#666666";
+      case "완료":
+        return "#2d5a2d";
+      case "진행중":
+        return "#ef6c00";
+      case "계획중":
+        return "#1565c0";
+      default:
+        return "#666666";
     }
   };
 
   useEffect(() => {
     (async () => {
-      const res = await fetch(process.env.PUBLIC_URL + "/projects.json");
-      const data = await res.json();
-      setProjects(
-        (data.projects || []).map(p => ({
-          ...p,
-          image: p.image || DefaultImage,
-        }))
-      );
+      try {
+        const res = await fetch(process.env.PUBLIC_URL + "/projects.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("프로젝트 데이터를 불러오지 못했습니다.");
+
+        const data = await res.json();
+        setProjects(
+          (data.projects || []).map(p => ({
+            ...p,
+            image: p.image || DefaultImage,
+          }))
+        );
+      } catch (e) {
+        console.error(e);
+        setError("프로젝트 데이터를 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
-  if (loading) return <div className="projects-grid-wrapper">로딩중…</div>;
-  if (error)   return <div className="projects-grid-wrapper">{error}</div>;
+
+  if (loading) return <div className="projects-grid-wrapper">로딩중...</div>;
+  if (error) return <div className="projects-grid-wrapper">{error}</div>;
 
   return (
     <div className="projects-grid-wrapper">
@@ -51,18 +66,11 @@ function ProjectGrid() {
 
             <div className="project-content">
               <div className="project-title">{project.title}</div>
-
               {project.date && (
                 <div className="project-date">
                   {new Date(project.date).toLocaleDateString()}
                 </div>
               )}
-
-              {/* description은 비어있을 수 있음 */}
-              {project.description && (
-                <div className="project-description">{project.description}</div>
-              )}
-
               <div className="project-tech">
                 {project.tags?.map((tag, idx) => (
                   <span key={idx} className="tech-tag">{tag}</span>
