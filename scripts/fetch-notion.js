@@ -1,151 +1,361 @@
-import { useEffect } from "react";
-import "./Popup.css";
+// scripts/fetch-notion.js  (ESM)
+// Node 20 내장 fetch 사용
+// 표(table)는 안전한 HTML 문자열로 만들고 "__HTML__:" 프리픽스를 붙여 전달.
+// 나머지 블록은 텍스트 라인으로 출력합니다.
 
-const HTML_PREFIX = "__HTML__:";
+import fs from 'fs';
+import path from 'path';
 
-function parseUrlLine(s) {
-  const str = String(s ?? "");
+const NOTION_TOKEN = process.env.NOTION_TOKEN;
+const DB_ID = process.env.NOTION_DATABASE_ID;
 
-  // 1) URL: <a href="...">...</a>
-  const mAnchor = /^URL:\s+<a[^>]+href="([^"]+)"[^>]*>.*<\/a>\s*$/i.exec(str);
-  if (mAnchor) return mAnchor[1];
+if (!NOTION_TOKEN || !DB_ID) {
+  console.error('Missing NOTION_TOKEN or NOTION_DATABASE_ID');
+  process.exit(1);
+}
 
-  // 2) URL: https://...
-  const mPlain = /^URL:\s+(https?:\/\/\S+)\s*$/i.exec(str);
-  if (mPlain) return mPlain[1];
+const BASE = 'https://api.notion.com/v1';
+const HEADERS = {
+  Authorization: `Bearer ${NOTION_TOKEN}`,
+  'Notion-Version': '2022-06-28',
+  'Content-Type': 'application/json',
+};
 
+const HTML_PREFIX = '__HTML__:'; // 안전 HTML 마커
+
+// ---------- Notion HTTP ----------
+async function notionPost(url, body) {
+  const res = await fetch(url, { method: 'POST', headers: HEADERS, body: JSON.stringify(body ?? {}) });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Notion API error ${res.status} @ POST ${url} :: ${t}`);
+  }
+  return res.json();
+}
+async function notionGet(url) {
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Notion API error ${res.status} @ GET ${url} :: ${t}`);
+  }
+  return res.json();
+}
+async function fetchAllPages() {
+  const pages = [];
+  let body = { page_size: 100, sorts: [{ timestamp: 'last_edited_time', direction: 'descending' }] };
+  while (true) {
+    const data = await notionPost(`${BASE}/databases/${DB_ID}/query`, body);
+    pages.push(...(data.results ?? []));
+    if (data.has_more && data.next_cursor) body.start_cursor = data.next_cursor;
+    else break;
+  }
+  return pages;
+}
+
+// ---------- Property pickers ----------
+const plain = (rich) => (rich?.map?.(r => r?.plain_text ?? '').join('') ?? '');
+function pickTitle(props) {
+  const cand = props.Title?.title ?? props.Name?.title;
+  if (cand?.length) return plain(cand);
+  for (const v of Object.values(props)) {
+    if (v?.type === 'title' && v.title?.length) return plain(v.title);
+  }
+  return '(제목 없음)';
+}
+function pickDate(props) {
+  const c = props.Date?.date;
+  if (c?.start) return c.start;
+  for (const v of Object.values(props)) {
+    if (v?.type === 'date' && v.date?.start) return v.date.start;
+  }
+  return null;
+}
+function pickTags(props) {
+  const cand = props['Multi-select']?.multi_select ?? props.Tags?.multi_select;
+  if (Array.isArray(cand)) return cand.map(t => t.name);
+  for (const v of Object.values(props)) {
+    if (v?.type === 'multi_select' && Array.isArray(v.multi_select)) {
+      return v.multi_select.map(t => t.name);
+    }
+  }
+  return [];
+}
+function pickStatus(props) {
+  const s1 = props.Status?.status?.name ?? props.Status?.select?.name;
+  if (s1) return s1;
+  for (const v of Object.values(props)) {
+    if (v?.type === 'status') return v.status?.name ?? '알수없음';
+    if (v?.type === 'select') return v.select?.name ?? '알수없음';
+  }
+  return '알수없음';
+}
+function pickImage(page, props) {
+  if (props.Image?.files?.length) {
+    const f = props.Image.files[0];
+    return f.type === 'external' ? f.external?.url : f.file?.url;
+  }
+  if (page.cover) {
+    return page.cover.type === 'external' ? page.cover.external?.url : page.cover.file?.url;
+  }
   return null;
 }
 
-// "📎 파일명 (host/…)" 같은 첨부 라벨 줄 감지
-function parseAttachmentLabel(s) {
-  const str = String(s ?? "");
-  // 아이콘 + 공백 + 라벨 텍스트
-  // 예: "📎 kid16914-데이터과학과머신러닝-1-.hwp (prod-files-secure.s3.us-west-2.amazonaws.com/kid16914-…)"
-  const m = /^([📎📄🖼️🎞️🔖🔗])\s+(.+)$/.exec(str);
-  if (!m) return null;
-
-  const icon = m[1];
-  let label = m[2].trim();
-
-  // 뒤의 (host/..)… 요약은 시각적 보조였으니 링크 텍스트에서는 제거
-  // "파일명 (무언가)" 패턴 -> 파일명만
-  const paren = label.match(/\s*\((?:.+)\)\s*$/);
-  if (paren) {
-    label = label.slice(0, paren.index).trim();
-  }
-  // 혹시 너무 길면 살짝만 줄임 (선택)
-  if (label.length > 120) label = label.slice(0, 119) + "…";
-
-  return { icon, label };
+// ---------- Text helpers ----------
+function richToText(rich) {
+  return (rich ?? []).map(r => r?.plain_text ?? '').join('');
+}
+function rtCellToTextArr(richArr) {
+  return (richArr ?? []).map(r => r?.plain_text ?? '').join('');
+}
+function truncate(s, n = 120) {
+  if (!s) return '';
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
+}
+function shortUrl(u) {
+  try {
+    const url = new URL(u);
+    const parts = url.pathname.split('/').filter(Boolean);
+    const tail = parts.slice(-1)[0] ?? '';
+    return `${url.host}/${tail.slice(0, 24)}${tail.length > 24 ? '…' : ''}`;
+  } catch { return u; }
 }
 
-function Popup({ project, onClose }) {
-  // ESC로 닫기
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+// ---------- Children fetch (pagination) ----------
+async function fetchBlockChildrenRaw(blockId) {
+  const results = [];
+  let cursor;
+  do {
+    const data = await notionGet(`${BASE}/blocks/${blockId}/children${cursor ? `?start_cursor=${cursor}` : ''}`);
+    results.push(...(data.results ?? []));
+    cursor = data.has_more ? data.next_cursor : undefined;
+  } while (cursor);
+  return results;
+}
 
-  if (!project) return null;
-  const stop = (e) => e.stopPropagation();
+// ---------- Safe HTML ----------
+function esc(s = '') {
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+function makeHtmlTable(rows, hasColHeader, hasRowHeader) {
+  // rows: string[][]
+  const trs = rows.map((cells, ri) => {
+    const tds = cells.map((txt, ci) => {
+      const isHeader = (hasColHeader && ri === 0) || (hasRowHeader && ci === 0);
+      const Tag = isHeader ? 'th' : 'td';
+      return `<${Tag}>${esc(String(txt ?? '')).replaceAll('\n', '<br/>')}</${Tag}>`;
+    }).join('');
+    return `<tr>${tds}</tr>`;
+  }).join('');
+  return `<div class="notion-table-wrap"><table class="notion-table"><tbody>${trs}</tbody></table></div>`;
+}
 
-const renderContent = () => {
+// ---------- Block → plain lines / HTML(table) ----------
+async function blockToPlainLines(block, depth = 0) {
+  const indent = '  '.repeat(Math.min(depth, 6));
   const out = [];
-  const lines = Array.isArray(project.content) ? project.content : [];
+  const t = block.type;
+  const get = () => richToText(block[t]?.rich_text);
 
-  for (let i = 0; i < lines.length; i++) {
-    const raw = String(lines[i] ?? "");
-
-    // 0) 안전 HTML 프리픽스 (__HTML__:) 먼저 처리
-    const htmlMatch = /^\uFEFF?\s*__HTML__:(.*)$/s.exec(raw);
-    if (htmlMatch) {
-      out.push(
-        <div
-          key={`html-${i}`}
-          className="popup-line popup-table"
-          dangerouslySetInnerHTML={{ __html: htmlMatch[1] }}
-        />
-      );
-      continue;
+  switch (t) {
+    case 'paragraph': {
+      const txt = get();
+      if (txt.trim().length) out.push(indent + txt);
+      break;
+    }
+    case 'heading_1':
+    case 'heading_2':
+    case 'heading_3': {
+      const txt = get();
+      if (txt.trim().length) {
+        const mark = t === 'heading_1' ? '# ' : t === 'heading_2' ? '## ' : '### ';
+        out.push(indent + mark + txt);
+      }
+      break;
+    }
+    case 'bulleted_list_item': {
+      const txt = get();
+      out.push(indent + '• ' + txt);
+      break;
+    }
+    case 'numbered_list_item': {
+      const txt = get();
+      out.push(indent + '1. ' + txt);
+      break;
+    }
+    case 'to_do': {
+      const txt = richToText(block.to_do?.rich_text);
+      const checked = block.to_do?.checked ? '[x]' : '[ ]';
+      out.push(indent + `${checked} ${txt}`);
+      break;
+    }
+    case 'quote': {
+      const txt = get();
+      out.push(indent + `> ${txt}`);
+      break;
+    }
+    case 'callout': {
+      const txt = richToText(block.callout?.rich_text);
+      const emoji = block.callout?.icon?.emoji ?? '💡';
+      out.push(indent + `${emoji} ${txt}`);
+      break;
+    }
+    case 'code': {
+      const txt = block.code?.rich_text?.map(r => r.plain_text ?? '').join('') ?? '';
+      const lang = block.code?.language ?? '';
+      out.push(indent + '```' + lang);
+      out.push(...txt.split('\n').map(l => indent + l));
+      out.push(indent + '```');
+      break;
+    }
+    case 'toggle': {
+      const txt = richToText(block.toggle?.rich_text);
+      out.push(indent + '▸ ' + txt);
+      break;
     }
 
-    // 1) 첨부 라벨 + 다음 줄 URL 페어 → 단일 하이퍼링크로
-    const att = parseAttachmentLabel(raw);
-    const next = lines[i + 1] ?? "";
-    const nextUrl = parseUrlLine(next);
-    if (att && nextUrl) {
-      out.push(
-        <div key={`att-${i}`} className="popup-line">
-          <a href={nextUrl} target="_blank" rel="noreferrer noopener" className="popup-attachment">
-            <span aria-hidden="true" className="popup-attachment-icon">{att.icon}</span>{" "}
-            <span className="popup-attachment-label">{att.label}</span>
-          </a>
-        </div>
-      );
-      i += 1; // URL 줄은 소비하여 숨김
-      continue;
+    // ---- Media / Links (요약 + 실제 URL 별도 줄) ----
+    case 'image': {
+      const d = block.image;
+      const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
+      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `🖼️ 이미지 ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'file': {
+      const d = block.file;
+      const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
+      const name = d?.name ?? '파일';
+      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `📎 ${name} ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'pdf': {
+      const d = block.pdf;
+      const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
+      const name = d?.name ?? 'PDF';
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `📄 ${name} ${label}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'video': {
+      const d = block.video;
+      const url = d?.type === 'external' ? d.external?.url : d?.file?.url;
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `🎞️ 비디오 ${label}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'embed': {
+      const d = block.embed;
+      const url = d?.url ?? null;
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `🔗 임베드 ${label}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
+    }
+    case 'bookmark': {
+      const d = block.bookmark;
+      const url = d?.url ?? null;
+      const cap = (d?.caption ?? []).map(c => c?.plain_text ?? '').join('');
+      const label = url ? `(${shortUrl(url)})` : '';
+      out.push(indent + `🔖 북마크 ${label}${cap ? ` — ${truncate(cap, 90)}` : ''}`);
+      if (url) out.push(indent + `URL: ${url}`);
+      break;
     }
 
-    // 2) (페어링 안 된) URL 단독 줄은 평소처럼 링크 처리
-    const soloUrl = parseUrlLine(raw);
-    if (soloUrl) {
-      out.push(
-        <div key={`url-${i}`} className="popup-line">
-          URL: <a href={soloUrl} target="_blank" rel="noreferrer noopener">{soloUrl}</a>
-        </div>
-      );
-      continue;
+    // ---- Table → HTML 문자열 + 프리픽스 ----
+    case 'table': {
+      const hasColHeader = !!block.table?.has_column_header;
+      const hasRowHeader = !!block.table?.has_row_header;
+      const children = await fetchBlockChildrenRaw(block.id);
+      const rows = children
+        .filter(c => c.type === 'table_row')
+        .map(c => (c.table_row?.cells ?? []).map(rtCellToTextArr));
+
+      const html = makeHtmlTable(rows, hasColHeader, hasRowHeader);
+      out.push(HTML_PREFIX + html); // "__HTML__:<div …>" 한 줄
+      return out; // 표는 여기서 종료
     }
 
-    // 3) 백업: 프리픽스 없이 바로 <div class="notion-table-wrap"> 시작 시 HTML로 처리
-    if (/^\s*<div\s+class="notion-table-wrap"/.test(raw)) {
-      out.push(
-        <div
-          key={`html2-${i}`}
-          className="popup-line popup-table"
-          dangerouslySetInnerHTML={{ __html: raw }}
-        />
-      );
-      continue;
+    default: {
+      out.push(indent + `[${t}]`);
+      break;
     }
+  }
 
-    // 4) 기본 텍스트
-    out.push(<div key={`txt-${i}`} className="popup-line">{raw}</div>);
+  // children 재귀 (table 제외)
+  if (block.has_children && block.type !== 'table') {
+    const kids = await fetchBlockChildrenRaw(block.id);
+    for (const kb of kids) {
+      const childLines = await blockToPlainLines(kb, depth + 1);
+      for (const ln of childLines) out.push(ln);
+    }
   }
   return out;
-};
-
-
-  return (
-    <div className="popup-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="popup-content" onClick={stop}>
-        <div className="popup-header">
-          <h2 className="popup-title">{project.title}</h2>
-          <button className="popup-close" onClick={onClose} aria-label="닫기">×</button>
-        </div>
-
-        <div className="popup-body">
-          {Array.isArray(project.content) && project.content.length > 0 ? (
-            <div className="popup-plain">
-              {renderContent()}
-            </div>
-          ) : (
-            <p className="popup-desc">본문이 없습니다.</p>
-          )}
-        </div>
-
-        <div className="popup-footer">
-          {project.url && (
-            <a className="popup-link" href={project.url} target="_blank" rel="noreferrer">
-              Notion에서 열기
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 }
 
-export default Popup;
+async function fetchPagePlainContent(pageId) {
+  try {
+    const roots = await fetchBlockChildrenRaw(pageId);
+    const lines = [];
+    for (const b of roots) {
+      const part = await blockToPlainLines(b, 0);
+      lines.push(...part);
+    }
+    // 연속 공백 줄 정리
+    const trimmed = [];
+    let prevEmpty = false;
+    for (const l of lines) {
+      const empty = !l.trim();
+      if (empty && prevEmpty) continue;
+      trimmed.push(l);
+      prevEmpty = empty;
+    }
+    return trimmed;
+  } catch (e) {
+    console.error('fetchPagePlainContent error:', e.message);
+    return [];
+  }
+}
+
+// ---------- Mapping & Main ----------
+function mapPropsOnly(page) {
+  const props = page.properties ?? {};
+  return {
+    id: page.id,
+    title: pickTitle(props),
+    date: pickDate(props),
+    tags: pickTags(props),
+    status: pickStatus(props),
+    image: pickImage(page, props),
+    description: '',
+    lastEdited: page.last_edited_time,
+    url: page.url,
+  };
+}
+
+async function main() {
+  const pages = await fetchAllPages();
+  const projects = await Promise.all(
+    pages.map(async (page) => {
+      const base = mapPropsOnly(page);
+      const content = await fetchPagePlainContent(page.id); // 텍스트 라인 + (table은 HTML-프리픽스)
+      return { ...base, content };
+    })
+  );
+
+  const out = { projects, generatedAt: new Date().toISOString() };
+  const outPath = path.join(process.cwd(), 'public', 'projects.json');
+  fs.writeFileSync(outPath, JSON.stringify(out, null, 2), 'utf-8');
+  console.log(`Wrote ${projects.length} projects → ${outPath}`);
+}
+
+main().catch(err => { console.error(err); process.exit(1); });
