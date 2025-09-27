@@ -2,8 +2,6 @@ import { useEffect } from "react";
 import "./Popup.css";
 
 function Popup({ project, onClose }) {
-  if (!project) return null;
-
   // ESC로 닫기
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -11,6 +9,7 @@ function Popup({ project, onClose }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  if (!project) return null;
   const stop = (e) => e.stopPropagation();
 
   return (
